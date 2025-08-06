@@ -24,12 +24,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Global variables
 global event_counter
 
-# --- SETUP INSTRUCTIONS ---
-# 1. Install dependencies:
-#    pip install selenium beautifulsoup4 openpyxl requests openai python-dotenv
-# 2. Download ChromeDriver from https://sites.google.com/chromium.org/driver/ and put it in your PATH
-# 3. Set your OpenAI API key in .env file or environment variable
-# 4. Run this script: python event_scraper.py
 
 # --- CONFIGURATION ---
 URL = "https://thetradeshowcalendar.com/orbus/index.php?"
