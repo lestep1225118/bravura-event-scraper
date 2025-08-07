@@ -85,8 +85,7 @@ pyinstaller>=5.0.0
    - Adjust scraping parameters if needed
    - Select months and set years (2025/2026)
 3. **Start scraping** by clicking "Scrape" in the Main tab
-4. **Monitor progress** through the real-time log
-5. **View results** by clicking "Open Results" when complete
+5. **View results** by clicking created excel file
 
 ### Settings Configuration
 
@@ -121,21 +120,6 @@ The application generates `events.xlsx` with the following columns:
 | Company Name | Extracted company name |
 | Company Name Source | Source of company name (GPT/Website) |
 
-## 🔧 Development
-
-### Project Structure
-```
-prospect-data-discovery-project/
-├── event_scraper_gui.py      # Main GUI application
-├── event_scraper.py          # Core scraping logic
-├── requirements.txt          # Python dependencies
-├── README.md                # This file
-├── env_example.txt          # Environment variables template
-├── .gitignore              # Git ignore rules
-├── EventScraper.exe        # Pre-built executable
-└── venv/                   # Virtual environment (not in repo)
-```
-
 ### Building the Executable
 ```bash
 # Activate virtual environment
@@ -155,10 +139,3 @@ pyinstaller --onefile --windowed --name EventScraper event_scraper_gui.py
 - **Rate Limits**: Respect API usage limits
 - **Costs**: API calls may incur charges
 - **Fallback**: Works without API key (limited functionality)
-## 🎉 Acknowledgments
-
-- **Selenium**: Browser automation framework
-- **OpenAI**: GPT-4 API for intelligent text processing
-- **Tkinter**: GUI framework
-- **PyInstaller**: Executable packaging
-- **BeautifulSoup**: HTML parsing library
