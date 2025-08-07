@@ -282,6 +282,12 @@ class EventScraperGUI:
         headless_check = ttk.Checkbutton(scraping_frame, text="Run browser in headless mode", variable=self.headless_var)
         headless_check.pack(anchor='w', pady=2)
         
+        # Default year (for backward compatibility)
+        ttk.Label(scraping_frame, text="Default year:").pack(anchor='w')
+        self.year_var = tk.StringVar(value=self.config.get('year', '2025'))
+        year_entry = ttk.Entry(scraping_frame, textvariable=self.year_var, width=10)
+        year_entry.pack(anchor='w', pady=2)
+        
 
         
         # Months selection
@@ -427,6 +433,7 @@ class EventScraperGUI:
         self.config['contact_scrape_delay'] = self.contact_delay_var.get()
         self.config['max_events'] = self.max_events_var.get()
         self.config['headless_mode'] = self.headless_var.get()
+        self.config['year'] = self.year_var.get()
         
         # Save selected months with their individual years
         selected_months = []
