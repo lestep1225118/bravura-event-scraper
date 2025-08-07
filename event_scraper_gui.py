@@ -656,7 +656,7 @@ class EventScraperGUI:
                                 
                                 # Get company name
                                 event_info = f"Event: {name}, Dates: {dates}, City: {city}, Country: {country}, Attendance: {attendance}, Exhibitors: {exhibitors}"
-                                company_name, source = SCRAPER_MODULES['get_company_name_hybrid'](name, event_info, website_url)
+                                company_name, source = SCRAPER_MODULES['get_company_name_hybrid'](name, event_info, website_url, self.api_key_var.get())
                                 
                                 if company_name:
                                     contact_info['company_name'] = company_name

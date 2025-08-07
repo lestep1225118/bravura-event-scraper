@@ -41,11 +41,17 @@ MAX_EVENTS = 600  # Limit to 20 events
 
 
 
-def get_company_name_from_chatgpt(event_name, event_info):
+def get_company_name_from_chatgpt(event_name, event_info, api_key=None):
     """
     Use ChatGPT to extract the company/organizer name from event information.
     """
-    if not OPENAI_API_KEY:
+    # Use provided API key or fall back to environment variable
+    if api_key:
+        api_key_to_use = api_key
+    else:
+        api_key_to_use = OPENAI_API_KEY
+    
+    if not api_key_to_use:
         print(f"    ERROR: OpenAI API key not set. Skipping ChatGPT extraction.")
         return ""
     
@@ -70,7 +76,7 @@ Look for:
 
 Please provide ONLY the company/organizer name, nothing else. If you can't determine it, respond with 'Unknown'."""
         
-        client = openai.OpenAI(api_key=OPENAI_API_KEY)
+        client = openai.OpenAI(api_key=api_key_to_use)
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -294,13 +300,13 @@ def extract_company_name_from_website(website_url, event_name):
         print(f"Error extracting company name from website for {event_name}: {e}")
         return ""
 
-def get_company_name_hybrid(event_name, event_info, website_url=""):
+def get_company_name_hybrid(event_name, event_info, website_url="", api_key=None):
     """
     Try ChatGPT first, then fall back to website extraction if ChatGPT fails.
     Returns tuple: (company_name, source)
     """
     # Try ChatGPT first (faster and more accurate for event names)
-    company_name = get_company_name_from_chatgpt(event_name, event_info)
+    company_name = get_company_name_from_chatgpt(event_name, event_info, api_key)
     
     if company_name:
         return company_name, "ChatGPT"
@@ -573,7 +579,7 @@ def main():
                         
                         # Get company name using hybrid approach (ChatGPT first, then website)
                         event_info = f"Event: {name}, Dates: {dates}, City: {city}, Country: {country}, Attendance: {attendance}, Exhibitors: {exhibitors}"
-                        company_name, source = get_company_name_hybrid(name, event_info, website_url)
+                        company_name, source = get_company_name_hybrid(name, event_info, website_url, OPENAI_API_KEY)
                         
                         if company_name:
                             contact_info['company_name'] = company_name
