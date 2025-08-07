@@ -28,8 +28,8 @@ WAIT_SECONDS = 7  # Increase if your internet is slow or the table loads slowly
 CONTACT_SCRAPE_DELAY = 2  # Delay between website visits to be respectful
 
 # OpenAI Configuration
-openai.api_key = os.getenv('OPENAI_API_KEY')
-if not openai.api_key:
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+if not OPENAI_API_KEY:
     print("⚠️  WARNING: OPENAI_API_KEY not found! Company name extraction will be limited to website scraping only.")
 
 # Token counter for ChatGPT usage
@@ -45,7 +45,7 @@ def get_company_name_from_chatgpt(event_name, event_info):
     """
     Use ChatGPT to extract the company/organizer name from event information.
     """
-    if not openai.api_key:
+    if not OPENAI_API_KEY:
         print(f"    ERROR: OpenAI API key not set. Skipping ChatGPT extraction.")
         return ""
     
@@ -70,7 +70,7 @@ Look for:
 
 Please provide ONLY the company/organizer name, nothing else. If you can't determine it, respond with 'Unknown'."""
         
-        client = openai.OpenAI()
+        client = openai.OpenAI(api_key=OPENAI_API_KEY)
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
