@@ -156,26 +156,6 @@ pip install pyinstaller
 pyinstaller --onefile --windowed --name EventScraper event_scraper_gui.py
 ```
 
-### Key Components
-
-#### GUI Architecture
-- **Tkinter-based**: Cross-platform GUI framework
-- **Tabbed Interface**: Main and Settings tabs
-- **Threading**: Non-blocking scraping operations
-- **Event-driven**: Responsive user interface
-
-#### Scraping Engine
-- **Selenium WebDriver**: Browser automation
-- **BeautifulSoup**: HTML parsing
-- **Requests**: HTTP client for website scraping
-- **OpenAI API**: Intelligent text processing
-
-#### Data Processing
-- **Excel Export**: Structured data output
-- **Contact Extraction**: Email and website parsing
-- **Company Name Detection**: AI-powered extraction
-- **Data Filtering**: US events with date validation
-
 ## ⚠️ Important Notes
 
 ### API Usage
@@ -196,45 +176,11 @@ pyinstaller --onefile --windowed --name EventScraper event_scraper_gui.py
 - **Network Speed**: Faster internet improves scraping speed
 - **Browser Resources**: Chrome WebDriver requires system resources
 
-## 🐛 Troubleshooting
-
-### Common Issues
-
-#### Application Won't Start
-- **Check Python version**: Ensure Python 3.8+ is installed
-- **Verify dependencies**: Run `pip install -r requirements.txt`
-- **Chrome WebDriver**: Ensure Chrome browser is installed
-- **Virtual environment**: Activate venv before running
-
-#### Scraping Errors
-- **Network issues**: Check internet connection
-- **Website changes**: Target site may have updated structure
-- **Rate limiting**: Increase wait times in settings
-- **API errors**: Verify OpenAI API key is valid
-
-#### Performance Issues
-- **Slow scraping**: Increase wait times in settings
-- **Memory errors**: Reduce max events limit
-- **GUI freezing**: Ensure scraping runs in background thread
-- **Browser crashes**: Enable headless mode
-
 ### Debug Mode
 For development, run with console output:
 ```bash
 python event_scraper_gui.py
 ```
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 📞 Support
 
@@ -243,16 +189,6 @@ For issues and questions:
 - **Documentation**: Check this README for usage instructions
 - **Configuration**: Review settings in the GUI
 
-## 🔄 Version History
-
-### v1.0.0 (Current)
-- Initial release with GUI interface
-- Individual month/year control
-- OpenAI integration for company extraction
-- Excel export functionality
-- Comprehensive error handling
-- Pre-built executable for Windows
-
 ## 🎉 Acknowledgments
 
 - **Selenium**: Browser automation framework
@@ -260,7 +196,3 @@ For issues and questions:
 - **Tkinter**: GUI framework
 - **PyInstaller**: Executable packaging
 - **BeautifulSoup**: HTML parsing library
-
----
-
-**Note**: This tool is designed for legitimate data collection purposes. Always respect website terms of service and implement appropriate rate limiting when scraping web content.
