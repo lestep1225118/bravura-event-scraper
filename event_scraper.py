@@ -10,16 +10,13 @@ import time
 import openpyxl
 import requests
 from urllib.parse import urljoin, urlparse
-import urllib3
+
 import openai
 import os
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
-
-# Disable SSL warnings for requests
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Global variables
 global event_counter
@@ -42,18 +39,7 @@ chatgpt_token_count = 0
 event_counter = 0
 MAX_EVENTS = 600  # Limit to 20 events
 
-# --- SELENIUM SETUP ---
-options = Options()
-options.add_argument('--headless')  # Run in headless mode (no browser window)
-options.add_argument('--no-sandbox')
-options.add_argument('--disable-dev-shm-usage')
-options.add_argument('--disable-gpu')
-options.add_argument('--window-size=1920,1080')
-options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
 
-driver = webdriver.Chrome(options=options)  # Or use webdriver.Firefox()
-driver.get(URL)
-wait = WebDriverWait(driver, 30)
 
 def get_company_name_from_chatgpt(event_name, event_info):
     """
@@ -451,196 +437,224 @@ def click_next_button(driver):
         print("Could not click next button:", e)
         return False
 
-# --- Select 'May' in the Month dropdown (name='vMo', value='5') ---
-try:
-    month_select = wait.until(EC.visibility_of_element_located((By.NAME, "vMo")))
-    select = Select(month_select)
-    select.select_by_value("5")
-except Exception as e:
-    print("Could not select month:", e)
-    with open("debug.html", "w", encoding="utf-8") as f:
-        f.write(driver.page_source)
-    driver.quit()
-    exit(1)
 
-# --- Click the Search button ---
-try:
-    # The search button is a <button> with class 'sc-button-submit'
-    search_button = driver.find_element(By.CLASS_NAME, "sc-button-submit")
-    search_button.click()
-    time.sleep(WAIT_SECONDS)
-except Exception as e:
-    print("Could not click search button:", e)
-    with open("debug_search.html", "w", encoding="utf-8") as f:
-        f.write(driver.page_source)
-    driver.quit()
-    exit(1)
 
-# --- Scrape all results for specified months in the USA (with pagination if needed) ---
-months = [
-    ("July", "7", ["JUL", "JULY"]),
-    ("August", "8", ["AUG", "AUGUST"]),
-    ("September", "9", ["SEP", "SEPT", "SEPTEMBER"]),
-    ("October", "10", ["OCT", "OCTOBER"]),
-    ("November", "11", ["NOV", "NOVEMBER"]),
-    ("December", "12", ["DEC", "DECEMBER"]),
-]
-year = "2025"
-events = []
-for month_name, month_value, month_aliases in months:
-    print(f"\nProcessing {month_name} {year}...")
-    # Reload the page to reset state for each month
+def main():
+    """Main function to run the scraper"""
+    global event_counter, chatgpt_token_count
+    
+    # Reset counters
+    event_counter = 0
+    chatgpt_token_count = 0
+    
+    print("Starting event scraper...")
+    
+    # --- SELENIUM SETUP ---
+    options = Options()
+    options.add_argument('--headless')  # Run in headless mode (no browser window)
+    options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage')
+    options.add_argument('--disable-gpu')
+    options.add_argument('--window-size=1920,1080')
+    options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
+
+    driver = webdriver.Chrome(options=options)  # Or use webdriver.Firefox()
     driver.get(URL)
-    time.sleep(WAIT_SECONDS)
-    # Select the month in the dropdown
+    wait = WebDriverWait(driver, 30)
+    
+    # --- Select 'May' in the Month dropdown (name='vMo', value='5') ---
     try:
         month_select = wait.until(EC.visibility_of_element_located((By.NAME, "vMo")))
         select = Select(month_select)
-        select.select_by_value(month_value)
+        select.select_by_value("5")
     except Exception as e:
-        print(f"Could not select month {month_name}:", e)
-        with open(f"debug_{month_name.lower()}.html", "w", encoding="utf-8") as f:
+        print("Could not select month:", e)
+        with open("debug.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
         driver.quit()
-        exit(1)
+        return
 
-    # Click the Search button
+    # --- Click the Search button ---
     try:
+        # The search button is a <button> with class 'sc-button-submit'
         search_button = driver.find_element(By.CLASS_NAME, "sc-button-submit")
         search_button.click()
         time.sleep(WAIT_SECONDS)
     except Exception as e:
-        print(f"Could not click search button for {month_name}:", e)
-        with open(f"debug_search_{month_name.lower()}.html", "w", encoding="utf-8") as f:
+        print("Could not click search button:", e)
+        with open("debug_search.html", "w", encoding="utf-8") as f:
             f.write(driver.page_source)
         driver.quit()
-        exit(1)
+        return
 
-    page = 1
-    while True:
-        print(f"Processing {month_name} - Page {page}")
-        
-        # Get all row elements using Selenium for better link extraction
-        row_elements = driver.find_elements(By.CSS_SELECTOR, "tr.row")
-        
-        for row_element in row_elements:
-            try:
-                cols = row_element.find_elements(By.TAG_NAME, "td")
-                if len(cols) < 6:
-                    continue
-                    
-                name = cols[0].text.strip()
-                dates = cols[1].text.strip()
-                city = cols[2].text.strip()
-                country = cols[3].text.strip()
-                attendance = cols[4].text.strip()
-                exhibitors = cols[5].text.strip()
+    # --- Scrape all results for specified months in the USA (with pagination if needed) ---
+    months = [
+        ("July", "7", ["JUL", "JULY"]),
+        ("August", "8", ["AUG", "AUGUST"]),
+        ("September", "9", ["SEP", "SEPT", "SEPTEMBER"]),
+        ("October", "10", ["OCT", "OCTOBER"]),
+        ("November", "11", ["NOV", "NOVEMBER"]),
+        ("December", "12", ["DEC", "DECEMBER"]),
+    ]
+    year = "2025"
+    events = []
+    for month_name, month_value, month_aliases in months:
+        print(f"\nProcessing {month_name} {year}...")
+        # Reload the page to reset state for each month
+        driver.get(URL)
+        time.sleep(WAIT_SECONDS)
+        # Select the month in the dropdown
+        try:
+            month_select = wait.until(EC.visibility_of_element_located((By.NAME, "vMo")))
+            select = Select(month_select)
+            select.select_by_value(month_value)
+        except Exception as e:
+            print(f"Could not select month {month_name}:", e)
+            with open(f"debug_{month_name.lower()}.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            driver.quit()
+            return
 
-                # Filter for US events and the current month/year, allowing for multiple month aliases
-                if (
-                    "united states" in country.lower() and
-                    any(alias in dates.upper() for alias in month_aliases) and
-                    year in dates
-                ):
-                    # Check if we've reached the maximum number of events
-                    if event_counter >= MAX_EVENTS:
-                        print(f"Reached maximum events ({MAX_EVENTS}). Stopping.")
-                        break
-                    
-                    event_counter += 1
-                    print(f"Processing event {event_counter}/{MAX_EVENTS}: {name}")
-                    
-                    # Extract website URL
-                    website_url = extract_website_url(row_element)
-                    
-                    # Initialize contact info
-                    contact_info = {
-                        'website': website_url,
-                        'email': '',
-                        'company_name': ''
-                    }
-                    
-                    # Get company name using hybrid approach (ChatGPT first, then website)
-                    event_info = f"Event: {name}, Dates: {dates}, City: {city}, Country: {country}, Attendance: {attendance}, Exhibitors: {exhibitors}"
-                    company_name, source = get_company_name_hybrid(name, event_info, website_url)
-                    
-                    if company_name:
-                        contact_info['company_name'] = company_name
-                    
-                    # Scrape contact information if website URL is found
-                    if website_url:
-                        website_contact_info = extract_contact_info(website_url, name)
-                        # Preserve the company name from hybrid extraction, only update website and email
-                        contact_info['website'] = website_contact_info['website']
-                        contact_info['email'] = website_contact_info['email']
-                        time.sleep(CONTACT_SCRAPE_DELAY)  # Be respectful to websites
-                    
-                    # Add event with contact info and source
-                    events.append([
-                        name, dates, city, country, attendance, exhibitors,
-                        contact_info['website'], contact_info['email'], contact_info['company_name'], source
-                    ])
-                    
-            except Exception as e:
-                print(f"Error processing row: {e}")
-                continue
-
-        # Check if we've reached max events and break out of pagination loop
-        if event_counter >= MAX_EVENTS:
-            break
-
-        # Try to click the Next button for this month, regardless of event presence
-        if click_next_button(driver):
-            page += 1
+        # Click the Search button
+        try:
+            search_button = driver.find_element(By.CLASS_NAME, "sc-button-submit")
+            search_button.click()
             time.sleep(WAIT_SECONDS)
-        else:
-            break
+        except Exception as e:
+            print(f"Could not click search button for {month_name}:", e)
+            with open(f"debug_search_{month_name.lower()}.html", "w", encoding="utf-8") as f:
+                f.write(driver.page_source)
+            driver.quit()
+            return
 
-# --- SAVE TO EXCEL ---
-print(f"Total US events to save: {len(events)}")
-wb = openpyxl.Workbook()
-ws = wb.active
-ws.title = "US Events with Contact Info"
-ws.append([
-    "Event Name", "Dates", "City", "Country", "Attendance", "Exhibitors",
-    "Website", "Email", "Company Name", "Company Name Source"
-])
-for event in events:
-    ws.append(event)
-wb.save("events.xlsx")
+        page = 1
+        while True:
+            print(f"Processing {month_name} - Page {page}")
+            
+            # Get all row elements using Selenium for better link extraction
+            row_elements = driver.find_elements(By.CSS_SELECTOR, "tr.row")
+            
+            for row_element in row_elements:
+                try:
+                    cols = row_element.find_elements(By.TAG_NAME, "td")
+                    if len(cols) < 6:
+                        continue
+                        
+                    name = cols[0].text.strip()
+                    dates = cols[1].text.strip()
+                    city = cols[2].text.strip()
+                    country = cols[3].text.strip()
+                    attendance = cols[4].text.strip()
+                    exhibitors = cols[5].text.strip()
 
-if events:
-    print(f"Saved {len(events)} events with contact information to events.xlsx")
-else:
-    print("No US events found for the selected months.")
+                    # Filter for US events and the current month/year, allowing for multiple month aliases
+                    if (
+                        "united states" in country.lower() and
+                        any(alias in dates.upper() for alias in month_aliases) and
+                        year in dates
+                    ):
+                        # Check if we've reached the maximum number of events
+                        if event_counter >= MAX_EVENTS:
+                            print(f"Reached maximum events ({MAX_EVENTS}). Stopping.")
+                            break
+                        
+                        event_counter += 1
+                        print(f"Processing event {event_counter}/{MAX_EVENTS}: {name}")
+                        
+                        # Extract website URL
+                        website_url = extract_website_url(row_element)
+                        
+                        # Initialize contact info
+                        contact_info = {
+                            'website': website_url,
+                            'email': '',
+                            'company_name': ''
+                        }
+                        
+                        # Get company name using hybrid approach (ChatGPT first, then website)
+                        event_info = f"Event: {name}, Dates: {dates}, City: {city}, Country: {country}, Attendance: {attendance}, Exhibitors: {exhibitors}"
+                        company_name, source = get_company_name_hybrid(name, event_info, website_url)
+                        
+                        if company_name:
+                            contact_info['company_name'] = company_name
+                        
+                        # Scrape contact information if website URL is found
+                        if website_url:
+                            website_contact_info = extract_contact_info(website_url, name)
+                            # Preserve the company name from hybrid extraction, only update website and email
+                            contact_info['website'] = website_contact_info['website']
+                            contact_info['email'] = website_contact_info['email']
+                            time.sleep(CONTACT_SCRAPE_DELAY)  # Be respectful to websites
+                        
+                        # Add event with contact info and source
+                        events.append([
+                            name, dates, city, country, attendance, exhibitors,
+                            contact_info['website'], contact_info['email'], contact_info['company_name'], source
+                        ])
+                        
+                except Exception as e:
+                    print(f"Error processing row: {e}")
+                    continue
 
-# Print summary of contact information found
-if events:
-    events_with_website = sum(1 for event in events if event[6])  # Website column
-    events_with_email = sum(1 for event in events if event[7])    # Email column
-    events_with_company = sum(1 for event in events if event[8])  # Company Name column
+            # Check if we've reached max events and break out of pagination loop
+            if event_counter >= MAX_EVENTS:
+                break
+
+            # Try to click the Next button for this month, regardless of event presence
+            if click_next_button(driver):
+                page += 1
+                time.sleep(WAIT_SECONDS)
+            else:
+                break
     
-    # Count sources
-    chatgpt_sources = sum(1 for event in events if event[9] == "ChatGPT")
-    website_sources = sum(1 for event in events if event[9] == "Website")
-    none_sources = sum(1 for event in events if event[9] == "None")
-    
-    print(f"\n--- CONTACT INFORMATION SUMMARY ---")
-    print(f"Total events: {len(events)}")
-    print(f"Events with website: {events_with_website}")
-    print(f"Events with email: {events_with_email}")
-    print(f"Events with company name: {events_with_company}")
-    print(f"Company names from ChatGPT: {chatgpt_sources}")
-    print(f"Company names from Website: {website_sources}")
-    print(f"Company names not found: {none_sources}")
-    print(f"Contact information found for {events_with_email + events_with_company} events")
+    # --- SAVE TO EXCEL ---
+    print(f"Total US events to save: {len(events)}")
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "US Events with Contact Info"
+    ws.append([
+        "Event Name", "Dates", "City", "Country", "Attendance", "Exhibitors",
+        "Website", "Email", "Company Name", "Company Name Source"
+    ])
+    for event in events:
+        ws.append(event)
+    wb.save("events.xlsx")
 
-# Clean up
-driver.quit()
+    if events:
+        print(f"Saved {len(events)} events with contact information to events.xlsx")
+    else:
+        print("No US events found for the selected months.")
 
-# Print final token usage summary
-if chatgpt_token_count > 0:
-    print(f"\n--- CHATGPT USAGE SUMMARY ---")
-    print(f"Total tokens used: {chatgpt_token_count}")
+    # Print summary of contact information found
+    if events:
+        events_with_website = sum(1 for event in events if event[6])  # Website column
+        events_with_email = sum(1 for event in events if event[7])    # Email column
+        events_with_company = sum(1 for event in events if event[8])  # Company Name column
+        
+        # Count sources
+        chatgpt_sources = sum(1 for event in events if event[9] == "ChatGPT")
+        website_sources = sum(1 for event in events if event[9] == "Website")
+        none_sources = sum(1 for event in events if event[9] == "None")
+        
+        print(f"\n--- CONTACT INFORMATION SUMMARY ---")
+        print(f"Total events: {len(events)}")
+        print(f"Events with website: {events_with_website}")
+        print(f"Events with email: {events_with_email}")
+        print(f"Events with company name: {events_with_company}")
+        print(f"Company names from ChatGPT: {chatgpt_sources}")
+        print(f"Company names from Website: {website_sources}")
+        print(f"Company names not found: {none_sources}")
+        print(f"Contact information found for {events_with_email + events_with_company} events")
 
-print("\nScraping completed!") 
+    # Clean up
+    driver.quit()
+
+    # Print final token usage summary
+    if chatgpt_token_count > 0:
+        print(f"\n--- CHATGPT USAGE SUMMARY ---")
+        print(f"Total tokens used: {chatgpt_token_count}")
+
+    print("\nScraping completed!")
+
+if __name__ == "__main__":
+    main() 
