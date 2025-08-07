@@ -47,11 +47,7 @@ pyinstaller>=5.0.0
 
 ### Option 1: Pre-built Executable (Recommended)
 1. Download `EventScraper.exe` from the releases
-2. Create a `.env` file in the same directory with your OpenAI API key:
-   ```
-   OPENAI_API_KEY=your-api-key-here
-   ```
-3. Run the executable directly
+2. Run the executable directly
 
 ### Option 2: From Source
 1. **Clone the repository**:
@@ -93,10 +89,6 @@ pyinstaller>=5.0.0
 5. **View results** by clicking "Open Results" when complete
 
 ### Settings Configuration
-
-#### OpenAI API Configuration
-- **API Key**: Required for company name extraction
-- **Auto-load**: Automatically loads from environment variables
 
 #### Scraping Configuration
 - **Target URL**: Trade show calendar website
