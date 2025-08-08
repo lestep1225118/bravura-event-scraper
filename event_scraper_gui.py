@@ -1,84 +1,40 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, scrolledtext
 import threading
 import os
 import json
+import time
 from datetime import datetime
-import sys
-import subprocess
-import importlib.util
 
-# Global flag to track if scraper modules are available
-SCRAPER_AVAILABLE = False
-SCRAPER_MODULES = {}
+# Import scraper functions directly (like Hunter.io app)
+from event_scraper import (
+    get_company_name_from_chatgpt,
+    extract_company_name_from_website,
+    get_company_name_hybrid,
+    extract_contact_info,
+    extract_website_url,
+    click_next_button
+)
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select, WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException, TimeoutException
+from bs4 import BeautifulSoup
+import re
+import openpyxl
+import requests
+from urllib.parse import urljoin, urlparse
+import openai
+from dotenv import load_dotenv
 
-def load_scraper_modules():
-    """Lazy load scraper modules when needed"""
-    global SCRAPER_AVAILABLE, SCRAPER_MODULES
-    
-    if SCRAPER_AVAILABLE:
-        return SCRAPER_MODULES
-    
-    try:
-        # Import the original scraper functions
-        from event_scraper import (
-            get_company_name_from_chatgpt,
-            extract_company_name_from_website,
-            get_company_name_hybrid,
-            extract_contact_info,
-            extract_website_url,
-            click_next_button
-        )
-        from selenium import webdriver
-        from selenium.webdriver.chrome.options import Options
-        from selenium.webdriver.common.by import By
-        from selenium.webdriver.support.ui import Select, WebDriverWait
-        from selenium.webdriver.support import expected_conditions as EC
-        from selenium.common.exceptions import NoSuchElementException, ElementNotInteractableException, TimeoutException
-        from bs4 import BeautifulSoup
-        import re
-        import time
-        import openpyxl
-        import requests
-        from urllib.parse import urljoin, urlparse
-        
-        import openai
-        from dotenv import load_dotenv
-        
-        SCRAPER_MODULES = {
-            'get_company_name_from_chatgpt': get_company_name_from_chatgpt,
-            'extract_company_name_from_website': extract_company_name_from_website,
-            'get_company_name_hybrid': get_company_name_hybrid,
-            'extract_contact_info': extract_contact_info,
-            'extract_website_url': extract_website_url,
-            'click_next_button': click_next_button,
-            'webdriver': webdriver,
-            'Options': Options,
-            'By': By,
-            'Select': Select,
-            'WebDriverWait': WebDriverWait,
-            'EC': EC,
-            'NoSuchElementException': NoSuchElementException,
-            'ElementNotInteractableException': ElementNotInteractableException,
-            'TimeoutException': TimeoutException,
-            'BeautifulSoup': BeautifulSoup,
-            're': re,
-            'time': time,
-            'openpyxl': openpyxl,
-            'requests': requests,
-            'urljoin': urljoin,
-            'urlparse': urlparse,
+# Load environment variables from .env file
+load_dotenv()
 
-            'openai': openai,
-            'load_dotenv': load_dotenv
-        }
-        SCRAPER_AVAILABLE = True
-        print("Scraper modules loaded successfully")
-        return SCRAPER_MODULES
-    except ImportError as e:
-        print(f"Warning: Could not import scraper modules: {e}")
-        SCRAPER_AVAILABLE = False
-        return {}
+# Global variables
+event_counter = 0
+chatgpt_token_count = 0
 
 class EventScraperGUI:
     def __init__(self, root):
@@ -464,17 +420,10 @@ class EventScraperGUI:
     def start_scraping(self):
         """Start the scraping process in a separate thread"""
         # Load scraper modules first
-        global SCRAPER_MODULES
-        SCRAPER_MODULES = load_scraper_modules()
+        global event_counter, chatgpt_token_count
+        event_counter = 0
+        chatgpt_token_count = 0
         
-        if not SCRAPER_AVAILABLE:
-            messagebox.showerror("Error", "Required modules not available. Please install requirements.")
-            return
-        
-        if self.is_scraping:
-            return
-        
-        # Validate settings
         if not self.api_key_var.get().strip():
             messagebox.showwarning("Warning", "OpenAI API key is not set. Company name extraction will be limited.")
         
@@ -528,7 +477,7 @@ class EventScraperGUI:
             chatgpt_token_count = 0
             
             # Set up Chrome options
-            options = SCRAPER_MODULES['Options']()
+            options = Options()
             if self.headless_var.get():
                 options.add_argument('--headless')
             options.add_argument('--no-sandbox')
@@ -538,9 +487,9 @@ class EventScraperGUI:
             options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36')
             
             # Initialize driver
-            driver = SCRAPER_MODULES['webdriver'].Chrome(options=options)
+            driver = webdriver.Chrome(options=options)
             driver.get(self.url_var.get())
-            wait = SCRAPER_MODULES['WebDriverWait'](driver, 30)
+            wait = WebDriverWait(driver, 30)
             
             # Disable SSL warnings
 
@@ -581,21 +530,21 @@ class EventScraperGUI:
                 
                 # Reload page for each month
                 driver.get(self.url_var.get())
-                SCRAPER_MODULES['time'].sleep(self.wait_seconds_var.get())
+                time.sleep(self.wait_seconds_var.get())
                 
                 # Select month
                 try:
-                    month_select = wait.until(SCRAPER_MODULES['EC'].visibility_of_element_located((SCRAPER_MODULES['By'].NAME, "vMo")))
-                    select = SCRAPER_MODULES['Select'](month_select)
+                    month_select = wait.until(EC.visibility_of_element_located((By.NAME, "vMo")))
+                    select = Select(month_select)
                     select.select_by_value(month_value)
                 except Exception as e:
                     continue
                 
                 # Click search
                 try:
-                    search_button = driver.find_element(SCRAPER_MODULES['By'].CLASS_NAME, "sc-button-submit")
+                    search_button = driver.find_element(By.CLASS_NAME, "sc-button-submit")
                     search_button.click()
-                    SCRAPER_MODULES['time'].sleep(self.wait_seconds_var.get())
+                    time.sleep(self.wait_seconds_var.get())
                 except Exception as e:
                     continue
                 
@@ -605,7 +554,7 @@ class EventScraperGUI:
                 
                 while self.is_scraping:
                     # Get rows
-                    row_elements = driver.find_elements(SCRAPER_MODULES['By'].CSS_SELECTOR, "tr.row")
+                    row_elements = driver.find_elements(By.CSS_SELECTOR, "tr.row")
                     
                     if not row_elements:
                         self.log_message(f"No more events found for {month_name} {search_year}")
@@ -616,7 +565,7 @@ class EventScraperGUI:
                             break
                         
                         try:
-                            cols = row_element.find_elements(SCRAPER_MODULES['By'].TAG_NAME, "td")
+                            cols = row_element.find_elements(By.TAG_NAME, "td")
                             if len(cols) < 6:
                                 continue
                             
@@ -645,7 +594,7 @@ class EventScraperGUI:
                                     self.root.after(50)
                                 
                                 # Extract website URL
-                                website_url = SCRAPER_MODULES['extract_website_url'](row_element)
+                                website_url = extract_website_url(row_element)
                                 
                                 # Initialize contact info
                                 contact_info = {
@@ -656,17 +605,17 @@ class EventScraperGUI:
                                 
                                 # Get company name
                                 event_info = f"Event: {name}, Dates: {dates}, City: {city}, Country: {country}, Attendance: {attendance}, Exhibitors: {exhibitors}"
-                                company_name, source = SCRAPER_MODULES['get_company_name_hybrid'](name, event_info, website_url, self.api_key_var.get())
+                                company_name, source = get_company_name_hybrid(name, event_info, website_url, self.api_key_var.get())
                                 
                                 if company_name:
                                     contact_info['company_name'] = company_name
                                 
                                 # Scrape contact information
                                 if website_url:
-                                    website_contact_info = SCRAPER_MODULES['extract_contact_info'](website_url, name)
+                                    website_contact_info = extract_contact_info(website_url, name)
                                     contact_info['website'] = website_contact_info['website']
                                     contact_info['email'] = website_contact_info['email']
-                                    SCRAPER_MODULES['time'].sleep(self.contact_delay_var.get())
+                                    time.sleep(self.contact_delay_var.get())
                                 
                                 # Add event
                                 events.append([
@@ -685,9 +634,9 @@ class EventScraperGUI:
                         break
                     
                     # Try next page
-                    if SCRAPER_MODULES['click_next_button'](driver):
+                    if click_next_button(driver):
                         page += 1
-                        SCRAPER_MODULES['time'].sleep(self.wait_seconds_var.get())
+                        time.sleep(self.wait_seconds_var.get())
                     else:
                         break
                 
@@ -703,7 +652,7 @@ class EventScraperGUI:
             
             # Save results
             if events and self.is_scraping:
-                wb = SCRAPER_MODULES['openpyxl'].Workbook()
+                wb = openpyxl.Workbook()
                 ws = wb.active
                 ws.title = "US Events with Contact Info"
                 ws.append([

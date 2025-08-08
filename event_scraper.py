@@ -27,10 +27,8 @@ URL = "https://thetradeshowcalendar.com/orbus/index.php?"
 WAIT_SECONDS = 7  # Increase if your internet is slow or the table loads slowly
 CONTACT_SCRAPE_DELAY = 2  # Delay between website visits to be respectful
 
-# OpenAI Configuration
-OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-if not OPENAI_API_KEY:
-    print("⚠️  WARNING: OPENAI_API_KEY not found! Company name extraction will be limited to website scraping only.")
+# OpenAI Configuration - Will be provided at runtime
+# No global API key - all functions accept api_key parameter
 
 # Token counter for ChatGPT usage
 chatgpt_token_count = 0
@@ -45,14 +43,8 @@ def get_company_name_from_chatgpt(event_name, event_info, api_key=None):
     """
     Use ChatGPT to extract the company/organizer name from event information.
     """
-    # Use provided API key or fall back to environment variable
-    if api_key:
-        api_key_to_use = api_key
-    else:
-        api_key_to_use = OPENAI_API_KEY
-    
-    if not api_key_to_use:
-        print(f"    ERROR: OpenAI API key not set. Skipping ChatGPT extraction.")
+    if not api_key:
+        print(f"    ERROR: OpenAI API key not provided. Skipping ChatGPT extraction.")
         return ""
     
     try:
@@ -76,7 +68,7 @@ Look for:
 
 Please provide ONLY the company/organizer name, nothing else. If you can't determine it, respond with 'Unknown'."""
         
-        client = openai.OpenAI(api_key=api_key_to_use)
+        client = openai.OpenAI(api_key=api_key)
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=[
@@ -579,7 +571,9 @@ def main():
                         
                         # Get company name using hybrid approach (ChatGPT first, then website)
                         event_info = f"Event: {name}, Dates: {dates}, City: {city}, Country: {country}, Attendance: {attendance}, Exhibitors: {exhibitors}"
-                        company_name, source = get_company_name_hybrid(name, event_info, website_url, OPENAI_API_KEY)
+                        # For standalone execution, try to get API key from environment
+                        api_key = os.getenv('OPENAI_API_KEY')
+                        company_name, source = get_company_name_hybrid(name, event_info, website_url, api_key)
                         
                         if company_name:
                             contact_info['company_name'] = company_name
