@@ -2,27 +2,6 @@
 
 A comprehensive GUI application for scraping trade show events with contact information and company data. Built with Python, Tkinter, and Selenium, this tool automates the collection of event data from trade show calendars.
 
-## 🚀 Features
-
-### Core Functionality
-- **Web Scraping**: Automated extraction of trade show events from online calendars
-- **Contact Information**: Gathers website URLs, email addresses, and company names
-- **Smart Filtering**: Focuses on US-based events with intelligent date filtering
-- **Excel Export**: Saves results to structured Excel files for easy analysis
-
-### GUI Interface
-- **Modern Tkinter GUI**: Clean, intuitive interface with tabbed navigation
-- **Real-time Progress**: Live progress tracking with detailed logging
-- **Configurable Settings**: Customizable scraping parameters and API keys
-- **Individual Month Control**: Set specific years for each month (2025/2026)
-- **Stop/Start Control**: Ability to pause and resume scraping operations
-
-### Advanced Features
-- **OpenAI Integration**: Uses GPT-4 for intelligent company name extraction
-- **Multi-threaded**: Non-blocking GUI with background scraping
-- **Error Handling**: Robust error recovery and user-friendly messages
-- **Configuration Persistence**: Saves settings between sessions
-
 ## 📋 Requirements
 
 ### System Requirements
@@ -131,6 +110,27 @@ pip install pyinstaller
 # Build executable
 pyinstaller --onefile --windowed --name EventScraper event_scraper_gui.py
 ```
+
+## 🚀 Features
+
+### Core Functionality
+- **Web Scraping**: Automated extraction of trade show events from online calendars
+- **Contact Information**: Gathers website URLs, email addresses, and company names
+- **Smart Filtering**: Focuses on US-based events with intelligent date filtering
+- **Excel Export**: Saves results to structured Excel files for easy analysis
+
+### GUI Interface
+- **Modern Tkinter GUI**: Clean, intuitive interface with tabbed navigation
+- **Real-time Progress**: Live progress tracking with detailed logging
+- **Configurable Settings**: Customizable scraping parameters and API keys
+- **Individual Month Control**: Set specific years for each month (2025/2026)
+- **Stop/Start Control**: Ability to pause and resume scraping operations
+
+### Advanced Features
+- **OpenAI Integration**: Uses GPT-4 for intelligent company name extraction
+- **Multi-threaded**: Non-blocking GUI with background scraping
+- **Error Handling**: Robust error recovery and user-friendly messages
+- **Configuration Persistence**: Saves settings between sessions
 
 ## ⚠️ Important Notes
 
